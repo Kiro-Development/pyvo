@@ -4,10 +4,10 @@ class ModelNotFound(Exception):
     pass
 
 def generate_resources(response, client=None):
-    from person import Me
-    from project import Project
-    from story import Story, Epic
-    from metadata import Label
+    from pyvo.model.person import Me
+    from pyvo.model.project import Project
+    from pyvo.model.story import Story, Epic
+    from pyvo.model.metadata import Label
 
     def generate(resource):
         kind = resource['kind']
