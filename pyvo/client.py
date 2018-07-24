@@ -1,7 +1,7 @@
 import requests
 import purl
 
-from model import generate_resources
+from pivo.model import generate_resources
 
 import logging
 
@@ -152,4 +152,3 @@ class Client(object):
         except AttributeError:
             request = self.request(uriparts=[k])
             return request
-
