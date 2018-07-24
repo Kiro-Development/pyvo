@@ -1,6 +1,6 @@
-from base import PivotalResource, Instantiated, fields, \
+from pyvo.model.base import PivotalResource, Instantiated, fields, \
     OneOf, PostValidators, RequiredOnPost
-from metadata import TimeZone, Label
+from pyvo.model.metadata import TimeZone, Label
 
 
 
@@ -53,4 +53,3 @@ class Epic(Instantiated, PivotalResource):
     past_done_stories_count = fields.IntField()
     past_done_stories_no_point_count = fields.IntField()
     url = fields.StringField()
-

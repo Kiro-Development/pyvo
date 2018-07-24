@@ -1,4 +1,4 @@
-from base import PivotalResource, Instantiated, fields
+from pyvo.model.base import PivotalResource, Instantiated, fields
 
 
 class TimeZone(PivotalResource):

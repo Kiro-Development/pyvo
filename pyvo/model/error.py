@@ -1,6 +1,6 @@
-from base import PivotalResource, Instantiated, fields, \
+from pyvo.model.base import PivotalResource, Instantiated, fields, \
     OneOf, PostValidators, RequiredOnPost
-from metadata import TimeZone, Label
+from pyvo.model.metadata import TimeZone, Label
 
 
 class PivotalValidationError(PivotalResource):
@@ -19,4 +19,3 @@ class Error(PivotalResource):
 
     def __str__(self):
         return "{}".format(self.general_problem or self.error)
-

@@ -1,4 +1,4 @@
-from error import Error
+from pyvo.model.error import Error
 
 class ModelNotFound(Exception):
     pass

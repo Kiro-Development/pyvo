@@ -1,7 +1,7 @@
 import requests
 import purl
 
-from pivo.model import generate_resources
+from pyvo.model import generate_resources
 
 import logging
 

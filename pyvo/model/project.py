@@ -1,6 +1,6 @@
-from base import PivotalResource, Instantiated, fields, \
+from pyvo.model.base import PivotalResource, Instantiated, fields, \
     OneOf, PostValidators, RequiredOnPost
-from metadata import TimeZone
+from pyvo.model.metadata import TimeZone
 
 
 class Project(Instantiated, PivotalResource):
@@ -54,4 +54,3 @@ class MembershipSummary(Instantiated, PivotalResource):
         validators=OneOf('owner', 'member', 'viewer', 'inactive')
     )
     last_viewed_at = fields.DateTimeField()
-

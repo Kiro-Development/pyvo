@@ -1,6 +1,6 @@
-from base import PivotalResource, Instantiated, fields
-from metadata import TimeZone
-from project import MembershipSummary
+from pyvo.model.base import PivotalResource, Instantiated, fields
+from pyvo.model.metadata import TimeZone
+from pyvo.model.project import MembershipSummary
 
 
 class Me(Instantiated, PivotalResource):
