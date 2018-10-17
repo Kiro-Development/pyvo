@@ -40,7 +40,9 @@ class Request(object):
     def __init__(self, method=None, session=None,
             auth_callable=(lambda x: x), base_url=None,
             uriparts=None, baseparts=None, sent=False,
-            client=None):
+            client=None, queryparts=None):
+        self.queryparts = queryparts or {}
+
         self.method = method
         self.session = session
         self.auth_callable = auth_callable
@@ -73,6 +75,9 @@ class Request(object):
     def reset_request(self):
         self.augment_request(None, reset=True)
 
+    def augment_queryparts(self, queryparts):
+        self.queryparts.update(queryparts)
+
     def _send(self, method, response_type, **kwargs):
 
         url = purl.URL(self.base_url)
@@ -81,6 +86,11 @@ class Request(object):
 
         for p in self.uriparts:
             url = url.add_path_segment(p)
+
+        for k, v in self.queryparts.items():
+            url.query_param(k, v)
+
+        print(url.query())
 
         request = requests.Request(method, url, **kwargs)
 
@@ -100,12 +110,19 @@ class Request(object):
         if resp.status_code == 404:
             raise ResourceNotFound(resp.content)
 
+        # XXX clean this up since these types don't support pagination
         if response_type == ResponseType.JSON:
             return resp.json()
         elif response_type == ResponseType.RAW:
             return resp
         else:
-            return generate_resources(resp, self.client)
+            data = resp.json()
+            if isinstance(data, list):
+                return PaginatedList(resp, self, method, response_type, **kwargs)
+            else:
+                return data
+
+            # return generate_resources(resp, self, self.client)
 
     def __getattr__(self, k):
         try:
