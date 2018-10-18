@@ -5,6 +5,9 @@ from pyvo.model import generate_resources
 
 import logging
 
+from pyvo.model.paginatedlist import PaginatedList
+
+
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(
@@ -13,34 +16,45 @@ handler.setFormatter(logging.Formatter(
 logger.addHandler(handler)
 logger.setLevel(logging.WARN)
 
+
 def debug(*args):
     msg = ", ".join(map(str, args))
     logger.debug(msg)
+    # XXX not seeing in test output
+    print(msg)
 
 
 PIVOTAL_TRACKER_TOKEN = '2a2c2003c8e45a643ad8af2b066b3e71'
 
+
 class NullReturnedError(Exception):
     pass
+
 
 class ResourceNotFound(Exception):
     pass
 
+
 HTTP_VERBS = ('head', 'options', 'get', 'post', 'put', 'patch', 'delete')
+
 
 class ResponseType(object):
     RAW = "raw"
     JSON = "json"
     RESOURCE = "resource"
+    PAGINATED = "paginated"
 
+
+# XXX change this
 ResponseType.DEFAULT = ResponseType.RESOURCE
+
 
 class Request(object):
     """docstring for Request"""
     def __init__(self, method=None, session=None,
-            auth_callable=(lambda x: x), base_url=None,
-            uriparts=None, baseparts=None, sent=False,
-            client=None, queryparts=None):
+                 auth_callable=(lambda x: x), base_url=None,
+                 uriparts=None, baseparts=None, sent=False,
+                 client=None, queryparts=None):
         self.queryparts = queryparts or {}
 
         self.method = method
@@ -80,6 +94,9 @@ class Request(object):
 
     def _send(self, method, response_type, **kwargs):
 
+        if response_type == ResponseType.PAGINATED:
+            return PaginatedList(self, method, response_type, **kwargs)
+
         url = purl.URL(self.base_url)
         # debug(resource_ids)
         debug("entered send", self.uriparts, self.baseparts)
@@ -88,9 +105,9 @@ class Request(object):
             url = url.add_path_segment(p)
 
         for k, v in self.queryparts.items():
-            url.query_param(k, v)
+            url = url.query_param(k, v)
 
-        print(url.query())
+        debug(url.as_string())
 
         request = requests.Request(method, url, **kwargs)
 
@@ -110,19 +127,17 @@ class Request(object):
         if resp.status_code == 404:
             raise ResourceNotFound(resp.content)
 
-        # XXX clean this up since these types don't support pagination
+        # TODO handle errors
+        # {'code': 'unauthorized_operation', 'kind': 'error', 'error': 'Authorization failure.', 'general_problem': "You aren't authorized to access the requested resource.", 'possible_fix': "Your project permissions are determined on the Project Membership page. If you are receiving this error you may be trying to access the wrong project, or the project API access is disabled, or someone listed as the project's Owner needs to change your membership type."}
+
         if response_type == ResponseType.JSON:
             return resp.json()
         elif response_type == ResponseType.RAW:
             return resp
+        elif response_type == ResponseType.RESOURCE:
+            return generate_resources(resp, self.client)
         else:
-            data = resp.json()
-            if isinstance(data, list):
-                return PaginatedList(resp, self, method, response_type, **kwargs)
-            else:
-                return data
-
-            # return generate_resources(resp, self, self.client)
+            raise Exception('unknown response type')
 
     def __getattr__(self, k):
         try:
@@ -131,7 +146,7 @@ class Request(object):
             return self.augment_request(k, reset=self.sent)
 
     def __call__(self, id=None,
-            response_type=ResponseType.DEFAULT, **kwargs):
+                 response_type=ResponseType.DEFAULT, **kwargs):
         if self.uriparts[-1] in HTTP_VERBS:
             method = self.uriparts.pop()
             if id is not None:
@@ -148,7 +163,7 @@ class Request(object):
 
 class Client(object):
     def __init__(self, token,
-            base_url='https://www.pivotaltracker.com/services/v5/'):
+                 base_url='https://www.pivotaltracker.com/services/v5/'):
         self.token = token
         self.base_url = base_url
         self.session = requests.Session()
@@ -161,7 +176,7 @@ class Client(object):
 
     def request(self, **kwargs):
         return Request(session=self.session, auth_callable=self.token_auth,
-            base_url=self.base_url, client=self, **kwargs)
+                       base_url=self.base_url, client=self, **kwargs)
 
     def __getattr__(self, k):
         try:

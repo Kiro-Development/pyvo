@@ -69,9 +69,8 @@ class PaginatedList(PaginatedListBase):
         ...
     """
 
-    def __init__(self, response, request, method=method, response_type=response_type, contentClass=None, requester=None, firstUrl=None, firstParams=None, headers=None, list_item="items", **kwargs):
+    def __init__(self, request, method=None, response_type=None, contentClass=None, requester=None, firstUrl=None, firstParams=None, headers=None, list_item="items", **kwargs):
         PaginatedListBase.__init__(self)
-        self.__response = response
         self.__request = request
         self.__method = method
         self.__response_type = response_type
@@ -82,6 +81,7 @@ class PaginatedList(PaginatedListBase):
         self.__total = None
         self.__returned = None
 
+        # TODO cleanup
         self.__requester = requester
         self.__contentClass = contentClass
         self.__firstUrl = firstUrl
@@ -93,58 +93,45 @@ class PaginatedList(PaginatedListBase):
         self.__totalCount = None
 
     def _couldGrow(self):
-        # TODO check the math
+        # XXX check the math
         if self.__total is None:
             return True
         return self.__offset < self.__total
 
     def _fetchNextPage(self):
-        # TODO increment offset and limit on request?
-
         self.__request.augment_queryparts({'offset': self.__offset, 'limit': self.__limit})
 
         response = self.__request._send(
-            self.__method, self.__response_type, **self.__send_kwargs
+            # XXX use ResponseType.RAW
+            self.__method, 'raw', **self.__send_kwargs
         )
         data = response.json()
         headers = response.headers
 
         data = data if data else []
+        print(data)
 
-        # if len(data) > 0:
-        limit, offset, total = self.__parseHeader(headers)
-
-        self.__limit = limit
-        self.__total = total
-        self.__offset += self.__limit
+        self.__parseHeader(headers)
 
         return data
 
-        """
-        self.__nextUrl = None
-        if len(data) > 0:
-            self.__parseHeader(headers)
-            if self._reversed:
-                if "prev" in links:
-                    self.__nextUrl = links["prev"]
-            elif "next" in links:
-                self.__nextUrl = links["next"]
-        self.__nextParams = None
-
-        if self.__list_item in data:
-            self.__totalCount = data.get('total_count')
-            data = data[self.__list_item]
-
-        content = [
-            self.__contentClass(self.__requester, headers, element, completed=False)
-            for element in data if element is not None
-        ]
-        return content
-        """
-
     def __parseHeader(self, headers):
-        limit = headers.get('X-Tracker-Pagination-Limit')
-        offset = headers.get('X-Tracker-Pagination-Offset')
-        total = headers.get('X-Tracker-Pagination-Total')
-        # self.__returned = headers.get('X-Tracker-Pagination-Returned')
-        return limit, offset, total
+        def parseInt(header):
+            value = headers.get(header)
+            return int(value) if value else value
+
+        limit = parseInt('X-Tracker-Pagination-Limit')
+        offset = parseInt('X-Tracker-Pagination-Offset')
+        total = parseInt('X-Tracker-Pagination-Total')
+        returned = parseInt('X-Tracker-Pagination-Returned')
+
+        # handle non paginated apis being called
+        if not any([limit, offset, total]):
+            self.__offset = self.__total
+        else:
+            self.__limit = limit or self.__limit
+            self.__total = total or self.__total
+            self.__offset = offset or self.__offset
+            self.__offset += self.__limit
+
+        print(f'{limit}, {offset}, {total}')

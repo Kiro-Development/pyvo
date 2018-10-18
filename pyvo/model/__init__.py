@@ -1,21 +1,21 @@
 from pyvo.model.error import Error
 
+from pyvo.model.person import Me
+from pyvo.model.project import Project
+from pyvo.model.story import Story, Epic
+from pyvo.model.metadata import Label
+
 
 class ModelNotFound(Exception):
     pass
 
 
-def generate_resources(response, request, client=None):
-    """
-    from pyvo.model.person import Me
-    from pyvo.model.project import Project
-    from pyvo.model.story import Story, Epic
-    from pyvo.model.metadata import Label
+def generate_resources(response, client=None):
 
     def generate(resource):
         kind = resource['kind']
 
-        print("generating {}".format(kind))
+        print(f'generating {kind}')
 
         resource_class = {
             'project': Project,
@@ -30,19 +30,10 @@ def generate_resources(response, request, client=None):
             raise ModelNotFound("No model found for {}".format(kind))
 
         return resource_class(**resource)
-    """
 
-    data = response.json()
-    headers = response.headers
+    response = response.json()
 
-    if isinstance(data, list):
-        for element in data:
-            yield element
-
-        # TODO check the math
-        while limit + offset < total:
-            newElements = self._grow()
-            for element in newElements:
-                yield element
+    if isinstance(response, list):
+        return (generate(resource) for resource in response)
     else:
-        return data
+        return generate(response)
