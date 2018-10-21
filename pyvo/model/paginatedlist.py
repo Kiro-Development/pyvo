@@ -109,7 +109,6 @@ class PaginatedList(PaginatedListBase):
         headers = response.headers
 
         data = data if data else []
-        print(data)
 
         self.__parseHeader(headers)
 
@@ -133,5 +132,3 @@ class PaginatedList(PaginatedListBase):
             self.__total = total or self.__total
             self.__offset = offset or self.__offset
             self.__offset += self.__limit
-
-        print(f'{limit}, {offset}, {total}')

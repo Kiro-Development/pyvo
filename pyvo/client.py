@@ -20,18 +20,20 @@ logger.setLevel(logging.WARN)
 def debug(*args):
     msg = ", ".join(map(str, args))
     logger.debug(msg)
-    # XXX not seeing in test output
-    print(msg)
 
 
 PIVOTAL_TRACKER_TOKEN = '2a2c2003c8e45a643ad8af2b066b3e71'
 
 
-class NullReturnedError(Exception):
+class PivotalError(Exception):
     pass
 
 
-class ResourceNotFound(Exception):
+class NullReturnedError(PivotalError):
+    pass
+
+
+class ResourceNotFound(PivotalError):
     pass
 
 
@@ -129,6 +131,9 @@ class Request(object):
 
         # TODO handle errors
         # {'code': 'unauthorized_operation', 'kind': 'error', 'error': 'Authorization failure.', 'general_problem': "You aren't authorized to access the requested resource.", 'possible_fix': "Your project permissions are determined on the Project Membership page. If you are receiving this error you may be trying to access the wrong project, or the project API access is disabled, or someone listed as the project's Owner needs to change your membership type."}
+        if not 200 <= resp.status_code <= 300:
+            debug(resp.status_code)
+            raise PivotalError(resp.content)
 
         if response_type == ResponseType.JSON:
             return resp.json()
