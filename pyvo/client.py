@@ -93,6 +93,7 @@ class Request(object):
 
     def augment_queryparts(self, queryparts):
         self.queryparts.update(queryparts)
+        return self
 
     def _send(self, method, response_type, **kwargs):
 
